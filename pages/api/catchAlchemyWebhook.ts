@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AlchemyUtils } from "@/pages/api/lib/AlchemyUtils";
 import {BaseScanUtils} from "@/pages/api/lib/BaseScanUtils";
+import {WalletTransaction} from "@/pages/api/types/types";
+import {SQLiteUtils} from "@/pages/api/lib/SQLiteUtils";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
@@ -16,35 +18,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.log(`createdAt: ${req.body.createdAt}`);
             console.log(`type: ${req.body.type}`);
 
-            const transactionData = JSON.parse(JSON.stringify(req.body.event));
+            const walletTransactionData = JSON.parse(JSON.stringify(req.body.event));
 
-            transactionData.activity.reduce(async (promiseChain:any, activity:any, index:any) => {
+            walletTransactionData.activity.reduce(async (promiseChain:any, activity:any, index:any) => {
                 await promiseChain;
-
-                console.log(`Activity ${index + 1}:`);
-                console.log(`  Network: Base Mainnet`);
                 const fromAddress = await AlchemyUtils.resolveENS(activity.fromAddress) || 'None';
                 const toAddress = await AlchemyUtils.resolveENS(activity.toAddress) || 'None';
                 const newFromEthBalance = await BaseScanUtils.getEthBalance(fromAddress);
                 const newToEthBalance = await BaseScanUtils.getEthBalance(toAddress);
-                console.log(`  From Address: ${fromAddress}`);
-                console.log(`  To Address: ${toAddress}`);
-                console.log(`  Block Number: ${activity.blockNum || 'None'}`);
-                console.log(`  Transaction Hash: ${activity.hash || 'None'}`);
-                console.log(`  Value: ${activity.value || 'None'}`);
-                console.log(`  Asset: ${activity.asset || 'None'}`);
-                console.log(`  New To Eth Balance: ${newFromEthBalance || 'Not a wallet'}`)
-                console.log(`  New From Eth Balance: ${newToEthBalance || 'Not a wallet'}`)
-                console.log(`  Category: ${activity.category || 'None'}`);
-                console.log(`  Raw Contract Address: ${activity.rawContract.address || 'None'}`);
-                console.log(`  Raw Contract Value: ${activity.rawContract.rawValue || 'None'}`);
-                console.log(`  Decimals: ${activity.rawContract.decimals || 'None'}`);
-                console.log('----------------------------------------');
+
+                const walletTransaction:WalletTransaction = {
+                    fromAddress: fromAddress,
+                    toAddress: toAddress,
+                    blockNum: activity.blockNum,
+                    hash: activity.hash,
+                    value: activity.value,
+                    asset: activity.asset,
+                    newToEthBalance: newFromEthBalance,
+                    newFromEthBalance: newToEthBalance,
+                    category: activity.category,
+                    rawContract: {
+                        address: activity.rawContract.address,
+                        rawValue: activity.rawContract.rawValue,
+                        decimals: activity.rawContract.decimals,
+                    },
+                };
+
+                await SQLiteUtils.insertTransaction(walletTransaction);
+
+                console.log("===== Wallet Transaction =====");
+                console.log(`  From Address       : ${walletTransaction.fromAddress}`);
+                console.log(`  To Address         : ${walletTransaction.toAddress}`);
+                console.log(`  Block Number       : ${walletTransaction.blockNum ?? 'None'}`);
+                console.log(`  Transaction Hash   : ${walletTransaction.hash ?? 'None'}`);
+                console.log(`  Value              : ${walletTransaction.value ?? 'None'}`);
+                console.log(`  Asset              : ${walletTransaction.asset ?? 'None'}`);
+                console.log(`  New To Eth Balance : ${walletTransaction.newToEthBalance ?? 'None'}`);
+                console.log(`  New From Eth Balance: ${walletTransaction.newFromEthBalance ?? 'None'}`);
+                console.log(`  Category           : ${walletTransaction.category ?? 'None'}`);
+                console.log("  Raw Contract Info:");
+                console.log(`    - Address        : ${walletTransaction.rawContract?.address ?? 'None'}`);
+                console.log(`    - Value          : ${walletTransaction.rawContract?.rawValue ?? 'None'}`);
+                console.log(`    - Decimals       : ${walletTransaction.rawContract?.decimals ?? 'None'}`);
+
+                console.log("===================================");
 
             }, Promise.resolve());
 
 
-            res.status(200).json({ message: 'Parsed transaction, thank you!' });
+            res.status(200).json({ message: 'Parsed walletTransaction, thank you!' });
 
         } catch (error) {
             console.error('Error processing GraphQL webhook:', error);
