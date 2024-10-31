@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.log(`id: ${req.body.id}`);
             console.log(`createdAt: ${req.body.createdAt}`);
             console.log(`type: ${req.body.type}`);
-            //console.log(`event: ${JSON.stringify(req.body.event)}`);
+
             const transactionData = JSON.parse(JSON.stringify(req.body.event));
 
             transactionData.activity.reduce(async (promiseChain:any, activity:any, index:any) => {
