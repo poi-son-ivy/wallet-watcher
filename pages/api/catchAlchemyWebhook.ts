@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AlchemyUtils } from "@/pages/api/lib/AlchemyUtils";
+import {BaseScanUtils} from "@/pages/api/lib/BaseScanUtils";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
@@ -24,13 +25,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log(`  Network: Base Mainnet`);
                 const fromAddress = await AlchemyUtils.resolveENS(activity.fromAddress) || 'None';
                 const toAddress = await AlchemyUtils.resolveENS(activity.toAddress) || 'None';
-
+                const newFromEthBalance = await BaseScanUtils.getEthBalance(fromAddress);
+                const newToEthBalance = await BaseScanUtils.getEthBalance(toAddress);
                 console.log(`  From Address: ${fromAddress}`);
                 console.log(`  To Address: ${toAddress}`);
                 console.log(`  Block Number: ${activity.blockNum || 'None'}`);
                 console.log(`  Transaction Hash: ${activity.hash || 'None'}`);
                 console.log(`  Value: ${activity.value || 'None'}`);
                 console.log(`  Asset: ${activity.asset || 'None'}`);
+                console.log(`  New To Eth Balance: ${newFromEthBalance || 'Not a wallet'}`)
+                console.log(`  New From Eth Balance: ${newToEthBalance || 'Not a wallet'}`)
                 console.log(`  Category: ${activity.category || 'None'}`);
                 console.log(`  Raw Contract Address: ${activity.rawContract.address || 'None'}`);
                 console.log(`  Raw Contract Value: ${activity.rawContract.rawValue || 'None'}`);
