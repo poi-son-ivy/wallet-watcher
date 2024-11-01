@@ -4,6 +4,8 @@ import {BaseScanUtils} from "@/pages/api/lib/BaseScanUtils";
 import {WalletTransaction} from "@/pages/api/types/types";
 import {SQLiteUtils} from "@/pages/api/lib/SQLiteUtils";
 
+let events: any[] = [];
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
         try {
@@ -45,6 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 };
 
                 await SQLiteUtils.insertTransaction(walletTransaction);
+                events.push('hi');
 
                 console.log("===== Wallet Transaction =====");
                 console.log(`  From Address       : ${walletTransaction.fromAddress}`);
@@ -65,16 +68,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             }, Promise.resolve());
 
+            // Check if the client accepts SSE
+            if (req.headers.accept && req.headers.accept === 'text/event-stream') {
+                // Set SSE headers
+                res.setHeader('Content-Type', 'text/event-stream');
+                res.setHeader('Cache-Control', 'no-cache');
+                res.setHeader('Connection', 'keep-alive');
+            }
 
+            const event = `data: hi\n\n`;
+            res.write(event);
             res.status(200).json({ message: 'Parsed walletTransaction, thank you!' });
 
         } catch (error) {
             console.error('Error processing GraphQL webhook:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
-    } else {
-        // If it's not a POST request, return a 405 Method Not Allowed
-        res.setHeader('Allow', ['POST']);
-        res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+    } else if (req.method === 'GET') {
+        // Handle SSE connection
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        res.write(`data: hi\n\n`);
+
+        // Cleanup on connection close
+        req.on('close', () => {
+            res.end();
+        });
+
+        res.status(200).json({ message: 'Stream ended' });
+    }
+    else {
+        // If the method is not supported, return a 405 Method Not Allowed error
+        res.setHeader('Allow', ['POST', 'GET']);
+        res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
