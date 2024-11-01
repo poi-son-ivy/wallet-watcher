@@ -2,11 +2,19 @@ import sqlite3 from 'sqlite3';
 import { Transaction, WalletTransaction } from '../types/types';
 
 export class SQLiteUtils {
-    public static async getAllTransactions() {
+    public static async getAllTransactions():Promise<WalletTransaction[]> {
         const db = new sqlite3.Database("./pages/api/db/transactions.db");
-        const transactions = db.all<Transaction[]>('SELECT * FROM transactions');
-        db.close();
-        return transactions;
+        return new Promise((resolve, reject) => {
+            db.all("SELECT * FROM transactions", (err, rows) => {
+                if (err) {
+                    reject(err); // Reject the promise if an error occurs
+                } else {
+                    // Coerce rows to WalletTransaction[] if they match the type structure
+                    resolve(rows as WalletTransaction[]);
+                }
+            });
+            db.close(); // Close the database connection
+        });
     }
 
     public static async insertTransaction(transaction: WalletTransaction) {

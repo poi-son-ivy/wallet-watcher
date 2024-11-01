@@ -4,7 +4,8 @@ import {BaseScanUtils} from "@/pages/api/lib/BaseScanUtils";
 import {WalletTransaction} from "@/pages/api/types/types";
 import {SQLiteUtils} from "@/pages/api/lib/SQLiteUtils";
 
-let events: any[] = [];
+let events: WalletTransaction[] = [];
+let clients: { res: NextApiResponse }[] = []; // Array to store connected clients for SSE
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
@@ -45,9 +46,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         decimals: activity.rawContract.decimals,
                     },
                 };
+                events.push(walletTransaction);
+                // Notify all connected clients
+                clients.forEach(client => {
+                    console.log("Sending event to client");
+                    client.res.write(`data: ${JSON.stringify(walletTransaction)}\n\n`);
+                });
 
                 await SQLiteUtils.insertTransaction(walletTransaction);
-                events.push('hi');
 
                 console.log("===== Wallet Transaction =====");
                 console.log(`  From Address       : ${walletTransaction.fromAddress}`);
@@ -85,19 +91,53 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             res.status(500).json({ error: 'Internal Server Error' });
         }
     } else if (req.method === 'GET') {
+        console.log("New SSE connection request");
         // Handle SSE connection
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
 
-        res.write(`data: hi\n\n`);
+        // Add the client to the list of clients
+        const client = { res };
+        clients.push(client);
+        console.log("Client added to SSE clients list");
 
-        // Cleanup on connection close
+        // Send an initial message to keep the connection open and active
+        res.write(`data: ${JSON.stringify({ message: 'Connection established, waiting for events...' })}\n\n`);
+
+        console.log("Sent initial connection msg");
+
+        // Send initial data to client
+        try {
+            const currentTransactions = await SQLiteUtils.getAllTransactions();
+            console.log("Sending initial transaction data to client");
+            res.write(`data: ${JSON.stringify(currentTransactions)}\n\n`);
+        } catch (error) {
+            console.error("Error fetching initial transactions:", error);
+        }
+
+        events.forEach(event => {
+            console.log("Sending existing event to client:", event);
+            res.write(`data: ${JSON.stringify(event)}\n\n`);
+        });
+
+        // Send a keep-alive signal every 15 seconds
+        const keepAliveInterval = setInterval(() => {
+            console.log("Sending keep-alive signal to client");
+            res.write(`:\n\n`); // SSE comment to keep connection alive
+        }, 5000);
+
+        // Remove client on connection close and clear interval
         req.on('close', () => {
+            console.log("Client disconnected from SSE");
+            clearInterval(keepAliveInterval);
+            clients = clients.filter(c => c !== client);
             res.end();
         });
 
-        res.status(200).json({ message: 'Stream ended' });
+        res.status(200).json({ message: 'Parsed walletTransaction, thank you!' });
+
     }
     else {
         // If the method is not supported, return a 405 Method Not Allowed error
