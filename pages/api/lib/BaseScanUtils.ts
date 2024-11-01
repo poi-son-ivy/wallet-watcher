@@ -15,11 +15,12 @@ export class BaseScanUtils {
                     throw new Error(`Error: ${response.status}`);
                 }
 
-                const data = await response.json();
-                console.log(data);
-
-            } catch (error:any) {
-                console.error(`Error: ${error.message}`)
+            } catch (error:unknown) {
+                if (error instanceof Error) {
+                    console.error(`Error: ${error.message}`);
+                } else {
+                    console.error(`Unknown error:`, error);
+                }
             }
 
     }
@@ -34,7 +35,6 @@ export class BaseScanUtils {
             }
 
             const data = await response.json();
-            console.log(data);
 
             const status: string = data.status;
             const message: string = data.message;
@@ -47,8 +47,12 @@ export class BaseScanUtils {
                 throw new Error(`Error: Error in requesting eth balance`);
             }
 
-        } catch (error:any) {
-            console.error(`Error: ${error.message}`)
+        } catch (error:unknown) {
+            if (error instanceof Error) {
+                console.error(`Error: ${error.message}`);
+            } else {
+                console.error(`Unknown error:`, error);
+            }
         }
     }
 }
