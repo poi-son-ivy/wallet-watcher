@@ -36,14 +36,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 status: "OK",
                 message: "Alchemy service is operational.",
             });
-            console.log(`Service Ok`);
+            console.log(`Service Ok`); //console simulates a message sent to the user informing them of
+                                       //service restoration
         } else {
             // Simulate Alchemy service FAILED, triggering degraded mode
             res.status(503).json({
                 status: "FAILED",
                 message: "Alchemy service is currently down. Entering 'degraded mode'. Transactions may be delayed.",
             });
-            console.log(`Service Degraded: Transactions may be delayed`);
+            console.log(`Service Degraded: Transactions may be delayed`); //user notification of service degradation
         }
     } else {
         // Handle any non-GET requests

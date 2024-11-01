@@ -1,9 +1,3 @@
-interface EthBalanceResponse {
-    status: string;
-    message: string;
-    result: string;
-}
-
 import { BigNumberish, ethers } from 'ethers';
 
 export class BaseScanUtils {

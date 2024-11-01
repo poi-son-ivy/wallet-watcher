@@ -1,5 +1,5 @@
 import sqlite3 from 'sqlite3';
-import { Transaction, WalletTransaction } from '../types/types';
+import { WalletTransaction } from '../types/types';
 
 export class SQLiteUtils {
     public static async getAllTransactions():Promise<WalletTransaction[]> {
@@ -13,7 +13,7 @@ export class SQLiteUtils {
                     resolve(rows as WalletTransaction[]);
                 }
             });
-            db.close(); // Close the database connection
+            db.close();
         });
     }
 
@@ -54,7 +54,7 @@ export class SQLiteUtils {
         } catch (error) {
             console.error('Failed to insert transaction:', error);
         } finally {
-            await db.close();
+            db.close();
         }
 
     }

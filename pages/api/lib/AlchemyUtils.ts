@@ -1,7 +1,5 @@
 import { JsonRpcProvider } from 'ethers';
 
-// Create an ethers provider using Alchemy's API
-
 const provider = new JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/" + process.env.ALCHEMY_KEY);
 
 export class AlchemyUtils {
@@ -16,7 +14,7 @@ export class AlchemyUtils {
                 return address;
             }
         } catch (error) {
-            return address;
+            return address; //if we otherwise fail we just return the address itself
         }
     }
 }

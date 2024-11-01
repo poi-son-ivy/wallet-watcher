@@ -1,3 +1,8 @@
+/*
+  Our homepage: A Server Sent Events (SSE) stream that connects to an API route that serves
+  as a sink for the Alchemy webhook.
+ */
+
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -8,7 +13,6 @@ export default function Home() {
 
     const eventSource = new EventSource('/api/catchAlchemyWebhook');
 
-    // Event fired when a message is received from the server
     eventSource.onmessage = (event) => {
       console.log("Received event from SSE:", event.data);
       try {
@@ -19,12 +23,10 @@ export default function Home() {
       }
     };
 
-    // Event fired when the connection is established
     eventSource.onopen = () => {
       console.log("SSE connection established successfully.");
     };
 
-    // Event fired when there is an error with the connection
     eventSource.onerror = (error) => {
       console.error("SSE error encountered:", error);
       if (eventSource.readyState === EventSource.CLOSED) {
@@ -32,7 +34,7 @@ export default function Home() {
       } else {
         console.warn("SSE connection error");
       }
-      eventSource.close(); // Close the connection on error
+      eventSource.close();
     };
 
     // Cleanup function to close the connection on component unmount
