@@ -4,7 +4,7 @@ import { BaseScanUtils } from "@/pages/api/lib/BaseScanUtils";
 import { WalletTransaction } from "@/pages/api/types/types";
 import { SQLiteUtils } from "@/pages/api/lib/SQLiteUtils";
 
-let events: WalletTransaction[] = [];
+const events: WalletTransaction[] = [];
 let clients: { res: NextApiResponse }[] = []; // Array to store connected clients for SSE
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -60,7 +60,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 events.push(walletTransaction);
 
                 clients.forEach(client => {
-                    console.log("Sending event to client");
                     client.res.write(`data: ${JSON.stringify(walletTransaction)}\n\n`);
                 });
 
