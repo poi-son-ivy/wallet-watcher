@@ -9,6 +9,18 @@ let clients: { res: NextApiResponse }[] = []; // Array to store connected client
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
+        //POST assumes we are receiving the alchemy webhook, we should verify the signature
+        //to prevent bad guys who know our endpoint from injecting bad data
+
+        const hashedSignature = req.headers['x-alchemy-signature'] as string;
+
+        if(!AlchemyUtils.isValidSignatureForStringBody(req.body.toString(),
+            hashedSignature,
+            process.env.WEBHOOK_KEY ?? 'none')) {
+
+            res.status(401).json({ error: 'Alchemy Header Does Not Match' });
+        }
+
         try {
             // Check for the correct header signature
             if (req.headers['content-type'] !== 'application/json; charset=utf-8') {
